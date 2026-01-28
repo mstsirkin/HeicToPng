@@ -3,6 +3,7 @@ name: Build and Package
 on:
   push:
     branches: [main, master]
+    tags: ['v*']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
@@ -27,21 +28,20 @@ jobs:
       - name: Build solution
         run: msbuild HeicToPng.sln /p:Configuration=Release /p:Platform=x64
 
-      - name: Upload DLL artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: HeicToPng-DLL
-          path: |
-            HeicToPng/bin/x64/Release/HeicToPng.dll
-            HeicToPng/bin/x64/Release/SharpShell.dll
-
       - name: Build installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
         with:
           path: installer.iss
 
-      - name: Upload installer
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: HeicToPng-Installer
           path: installer-output/HeicToPng-Setup.exe
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer-output/HeicToPng-Setup.exe
+          generate_release_notes: true
