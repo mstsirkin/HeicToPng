@@ -1,6 +1,6 @@
 [Setup]
 AppName=HEIC to PNG Converter
-AppVersion=1.0.1
+AppVersion=1.0.2
 AppPublisher=
 AppPublisherURL=
 DefaultDirName={autopf}\HeicToPng
@@ -27,34 +27,42 @@ Filename: "{dotnet4064}\regasm.exe"; Parameters: "/codebase ""{app}\HeicToPng.dl
 Filename: "{dotnet4064}\regasm.exe"; Parameters: "/unregister ""{app}\HeicToPng.dll"""; Flags: runhidden; RunOnceId: "UnregisterShellExt"
 
 [Code]
-procedure CurStepChanged(CurStep: TSetupStep);
+procedure RestartExplorer(Kill: Boolean);
 var
   ResultCode: Integer;
+begin
+  if Kill then
+  begin
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/f /im explorer.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(1000);
+  end
+  else
+  begin
+    Exec(ExpandConstant('{win}\explorer.exe'), '', '', SW_SHOW, ewNoWait, ResultCode);
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
     // Restart Explorer to load the new extension
-    Exec('taskkill.exe', '/f /im explorer.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec('explorer.exe', '', '', SW_SHOW, ewNoWait, ResultCode);
+    RestartExplorer(True);
+    RestartExplorer(False);
   end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-var
-  ResultCode: Integer;
 begin
   if CurUninstallStep = usUninstall then
   begin
-    // Restart Explorer BEFORE unregistering and deleting files
-    // This ensures the DLL is not locked by Explorer
-    Exec('taskkill.exe', '/f /im explorer.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    // Small delay to ensure Explorer fully exits
-    Sleep(500);
+    // Kill Explorer BEFORE unregistering and deleting files
+    RestartExplorer(True);
   end;
 
   if CurUninstallStep = usPostUninstall then
   begin
     // Restart Explorer after uninstall is complete
-    Exec('explorer.exe', '', '', SW_SHOW, ewNoWait, ResultCode);
+    RestartExplorer(False);
   end;
 end;
