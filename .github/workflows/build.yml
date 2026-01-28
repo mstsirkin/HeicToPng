@@ -1,0 +1,47 @@
+name: Build and Package
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore HeicToPng.sln
+
+      - name: Build solution
+        run: msbuild HeicToPng.sln /p:Configuration=Release /p:Platform=x64
+
+      - name: Upload DLL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HeicToPng-DLL
+          path: |
+            HeicToPng/bin/x64/Release/HeicToPng.dll
+            HeicToPng/bin/x64/Release/SharpShell.dll
+
+      - name: Build installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
+        with:
+          path: installer.iss
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: HeicToPng-Installer
+          path: installer-output/HeicToPng-Setup.exe
