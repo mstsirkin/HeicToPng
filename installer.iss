@@ -1,6 +1,6 @@
 [Setup]
 AppName=HEIC to PNG Converter
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=
 AppPublisherURL=
 DefaultDirName={autopf}\HeicToPng
@@ -43,10 +43,18 @@ procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   ResultCode: Integer;
 begin
+  if CurUninstallStep = usUninstall then
+  begin
+    // Restart Explorer BEFORE unregistering and deleting files
+    // This ensures the DLL is not locked by Explorer
+    Exec('taskkill.exe', '/f /im explorer.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    // Small delay to ensure Explorer fully exits
+    Sleep(500);
+  end;
+
   if CurUninstallStep = usPostUninstall then
   begin
-    // Restart Explorer to unload the extension
-    Exec('taskkill.exe', '/f /im explorer.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    // Restart Explorer after uninstall is complete
     Exec('explorer.exe', '', '', SW_SHOW, ewNoWait, ResultCode);
   end;
 end;
